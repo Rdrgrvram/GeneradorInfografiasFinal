@@ -44,6 +44,26 @@ PORT=3001
 MONGODB_URI=mongodb+srv://<TU_USUARIO>:<TU_PASSWORD>@<TU_CLUSTER>.mongodb.net/infografias?retryWrites=true&w=majority
 JWT_SECRET=tu_clave_secreta
 ```
+🔧 Cómo conectarse a la base de datos en MongoDB Compass
+Abre MongoDB Compass.
+
+Haz clic en "New Connection".
+
+En el campo de conexión (Connection String), pega la URI del tipo:
+
+pgsql
+Copy
+Edit
+mongodb+srv://USUARIO:PASSWORD@CLUSTER.mongodb.net/infografiasDB?retryWrites=true&w=majority
+Cambia USUARIO, PASSWORD y CLUSTER por tus propios datos de MongoDB Atlas.
+
+Si no tienes un usuario y cluster, crea una cuenta gratuita en https://www.mongodb.com/cloud/atlas.
+
+Agrega un nuevo usuario de base de datos y habilita el acceso desde todas las IPs (0.0.0.0/0) si es para desarrollo.
+
+Copia el URI proporcionado por MongoDB Atlas y reemplaza en el .env.
+
+Haz clic en "Connect". Ahora puedes visualizar y modificar los datos de la base de datos infografiasDB.
 
 > ⚠️ **IMPORTANTE**: Sustituye `<TU_USUARIO>`, `<TU_PASSWORD>` y `<TU_CLUSTER>` por tus datos de MongoDB Atlas.
 
