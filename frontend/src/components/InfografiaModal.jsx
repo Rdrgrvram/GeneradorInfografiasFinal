@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 
 const InfografiaModal = ({ infografia, onClose, onNuevoComentario }) => {
   const [comentarios, setComentarios] = useState([]);
   const [nuevoComentario, setNuevoComentario] = useState('');
+  const [rol, setRol] = useState('');
 
   useEffect(() => {
     const fetchComentarios = async () => {
@@ -15,11 +17,12 @@ const InfografiaModal = ({ infografia, onClose, onNuevoComentario }) => {
       }
     };
 
+    setRol(localStorage.getItem('rol') || '');
     if (infografia) fetchComentarios();
   }, [infografia]);
 
   const handleEnviarComentario = async () => {
-    if (!nuevoComentario.trim()) return;
+    if (!nuevoComentario.trim() || rol === 'invitado') return;
 
     try {
       const token = localStorage.getItem('token');
@@ -27,12 +30,12 @@ const InfografiaModal = ({ infografia, onClose, onNuevoComentario }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           infografiaId: infografia._id,
-          contenido: nuevoComentario
-        })
+          contenido: nuevoComentario,
+        }),
       });
 
       if (!res.ok) throw new Error('Error al comentar');
@@ -41,7 +44,6 @@ const InfografiaModal = ({ infografia, onClose, onNuevoComentario }) => {
       setComentarios([...comentarios, nuevo]);
       setNuevoComentario('');
 
-      // ✅ Notificar al padre que se añadió un nuevo comentario
       if (onNuevoComentario) {
         onNuevoComentario(infografia._id);
       }
@@ -52,15 +54,18 @@ const InfografiaModal = ({ infografia, onClose, onNuevoComentario }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
+      <div className="bg-white rounded-lg w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh] shadow-lg">
+        
+        {/* Botón cerrar */}
         <button
-          className="absolute top-2 right-2 text-red-600 font-bold text-xl"
+          className="absolute top-3 right-3 text-gray-600 hover:text-red-500 transition"
           onClick={onClose}
+          aria-label="Cerrar"
         >
-          ×
+          <X size={24} />
         </button>
 
-        <h2 className="text-xl font-bold text-fondoInstitucional mb-2">{infografia.titulo}</h2>
+        <h2 className="text-xl font-bold text-fondoInstitucional mb-3">{infografia.titulo}</h2>
 
         {infografia.imagenes?.[0] && (
           <img
@@ -77,31 +82,39 @@ const InfografiaModal = ({ infografia, onClose, onNuevoComentario }) => {
           dangerouslySetInnerHTML={{ __html: infografia.texto }}
         />
 
-        <hr className="my-4" />
-        <h3 className="text-lg font-semibold">Comentarios</h3>
+        <hr className="my-6" />
 
-        <div className="space-y-2 mt-2">
+        <h3 className="text-lg font-semibold mb-2">Comentarios</h3>
+
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {comentarios.length === 0 && (
             <p className="text-gray-500">No hay comentarios todavía.</p>
           )}
           {comentarios.map((c) => (
-            <div key={c._id} className="bg-gray-100 p-2 rounded">
-              <strong>{c.usuarioId?.nombre || 'Usuario'}</strong>: {c.contenido}
+            <div key={c._id} className="bg-gray-100 p-2 rounded text-sm">
+              <strong>{c.usuarioId?.nombre || 'Usuario'}:</strong> {c.contenido}
             </div>
           ))}
         </div>
 
+        {/* Caja de comentario */}
         <div className="mt-4 flex gap-2">
           <input
             type="text"
-            placeholder="Escribe un comentario..."
-            className="flex-1 border px-3 py-2 rounded"
+            placeholder={rol === 'invitado' ? 'Inicia sesión para comentar' : 'Escribe un comentario...'}
+            className="flex-1 border px-3 py-2 rounded text-sm"
             value={nuevoComentario}
             onChange={(e) => setNuevoComentario(e.target.value)}
+            disabled={rol === 'invitado'}
           />
           <button
-            className="bg-fondoInstitucional text-white px-4 py-2 rounded"
+            className={`px-4 py-2 rounded text-sm font-semibold ${
+              rol === 'invitado'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-fondoInstitucional text-white hover:bg-orange-700 transition'
+            }`}
             onClick={handleEnviarComentario}
+            disabled={rol === 'invitado'}
           >
             Comentar
           </button>

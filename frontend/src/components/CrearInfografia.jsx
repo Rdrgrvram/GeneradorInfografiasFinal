@@ -86,8 +86,8 @@ const CrearInfografia = ({ setVistaActiva }) => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-fondoInstitucional">Crear Infografía</h2>
+    <div className="bg-white p-10 rounded-2xl shadow-lg max-w-4xl mx-auto mt-8 space-y-8">
+      <h2 className="text-3xl font-bold text-center text-fondoInstitucional border-b pb-2">Crear Nueva Infografía</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -96,7 +96,7 @@ const CrearInfografia = ({ setVistaActiva }) => {
             type="text"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
-            className="w-full border border-gray-300 px-4 py-2 rounded"
+            className="w-full border border-gray-300 focus:border-orange-500 focus:ring focus:ring-orange-200 px-4 py-2 rounded-md shadow-sm transition-all"
             placeholder="Ej. Independencia de Bolivia"
             required
           />
@@ -104,25 +104,36 @@ const CrearInfografia = ({ setVistaActiva }) => {
 
         <div>
           <label className="block font-semibold mb-2">Contenido</label>
-          <ReactQuill
-            theme="snow"
-            value={contenido}
-            onChange={setContenido}
-            className="bg-white"
-          />
+          <div className="border border-gray-300 rounded-md overflow-hidden">
+            <ReactQuill
+              theme="snow"
+              value={contenido}
+              onChange={setContenido}
+              className="bg-white"
+            />
+          </div>
         </div>
 
         <div>
           <label className="block font-semibold mb-2">Imagen de vista previa</label>
-          <input type="file" accept="image/*" onChange={handleImagenChange} />
-          {imagen && <img src={imagen} alt="Vista previa" className="mt-4 max-h-48" />}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImagenChange}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
+          />
+          {imagen && (
+            <div className="mt-4">
+              <img src={imagen} alt="Vista previa" className="rounded-lg border border-gray-200 shadow max-h-60 object-contain mx-auto" />
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             type="submit"
             disabled={cargando}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg shadow font-semibold transition-all"
           >
             {cargando ? 'Guardando...' : 'Guardar Infografía'}
           </button>
@@ -130,11 +141,15 @@ const CrearInfografia = ({ setVistaActiva }) => {
           <button
             type="button"
             onClick={exportarPDF}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-semibold"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow font-semibold transition-all"
           >
             Exportar a PDF
           </button>
         </div>
+
+        {cargando && (
+          <p className="text-center text-sm text-gray-500">⏳ Guardando infografía...</p>
+        )}
       </form>
 
       {/* Contenido oculto pero visible para html2canvas */}
@@ -144,7 +159,7 @@ const CrearInfografia = ({ setVistaActiva }) => {
           position: 'absolute',
           left: '-9999px',
           top: 0,
-          width: '794px', // tamaño A4 en px a 96 DPI aprox
+          width: '794px',
           padding: '30px',
           fontFamily: 'Arial, sans-serif'
         }}

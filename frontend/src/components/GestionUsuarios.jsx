@@ -8,7 +8,7 @@ const GestionUsuarios = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [usuariosPorPagina, setUsuariosPorPagina] = useState(10);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [usuarioEditandoId, setUsuarioEditandoId] = useState(null); 
+  const [usuarioEditandoId, setUsuarioEditandoId] = useState(null);
   const [usuarioForm, setUsuarioForm] = useState({
     nombre: '',
     correo: '',
@@ -21,35 +21,27 @@ const GestionUsuarios = () => {
 
   useEffect(() => {
     const fetchUsuarios = async () => {
-    try {
-      const token = getToken();
-      const response = await fetch('http://localhost:3001/api/usuarios',{
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Error al obtener los usuarios');
+      try {
+        const token = getToken();
+        const response = await fetch('http://localhost:3001/api/usuarios', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setUsuarios(data);
+        } else if (Array.isArray(data.usuarios)) {
+          setUsuarios(data.usuarios);
+        } else {
+          setUsuarios([]);
+          console.error('La respuesta no es un array:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching usuarios:', error);
       }
+    };
+    fetchUsuarios();
+  }, []);
 
-      const data = await response.json();
-
-      console.log('Usuarios obtenidos:', data);
-      if (Array.isArray(data)) {
-      setUsuarios(data);
-      }else if (Array.isArray(data.usuarios)) {
-        setUsuarios(data.usuarios);
-      }else{
-        console.error('la respuesta no es un array', data);
-        setUsuarios([]);
-      }
-    } catch (error) {
-      console.error('Error fetching usuarios:', error);
-    }
-  };
-  fetchUsuarios();
-}, []);
-  
   const handleEditar = (usuario) => {
     setUsuarioForm({ ...usuario, contrasena: '' });
     setUsuarioEditandoId(usuario.id);
@@ -58,25 +50,19 @@ const GestionUsuarios = () => {
   };
 
   const handleEliminar = async (id) => {
-    const confirmar = window.confirm('¿Estás seguro de eliminar este usuario?');
-    if (confirmar){
-      try {
-        const response = await fetch(`http://localhost:3001/api/usuarios/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${getToken()}`,
-          },
-        });
+    if (!window.confirm('¿Estás seguro de eliminar este usuario?')) return;
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Error al eliminar el usuario');
-        }
+    try {
+      const res = await fetch(`http://localhost:3001/api/usuarios/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
 
-        setUsuarios((prev) => prev.filter((usuario) => usuario.id !== id));
-      } catch (error) {
-        alert(error.message);
-      }
+      if (!res.ok) throw new Error('Error al eliminar el usuario');
+
+      setUsuarios(prev => prev.filter((u) => u.id !== id));
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -109,59 +95,52 @@ const GestionUsuarios = () => {
   };
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
     if (!validarFormulario()) return;
 
     try {
       if (usuarioEditandoId) {
-        const token = getToken();
         const response = await fetch(`http://localhost:3001/api/usuarios/${usuarioEditandoId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${getToken()}`,
           },
           body: JSON.stringify(usuarioForm),
         });
 
-        if(!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Error al actualizar el usuario');
-        }
+        const updatedData = await response.json();
+        if (!response.ok) throw new Error(updatedData.message || 'Error al actualizar el usuario');
 
-        const updatedData= await response.json();
-        setUsuarios((prev) => prev.map((u) => (u.id === updatedData.usuario.id ? updatedData.usuario : u))
+        setUsuarios((prev) =>
+          prev.map((u) => (u.id === updatedData.usuario.id ? updatedData.usuario : u))
         );
       } else {
         const response = await fetch('http://localhost:3001/api/usuarios', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getToken()}`,
+            Authorization: `Bearer ${getToken()}`,
           },
           body: JSON.stringify(usuarioForm),
         });
 
-      if(!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Error al crear el usuario');
-        }
         const nuevoUsuario = await response.json();
-        setUsuarios(prev => [...prev, nuevoUsuario]);
+        if (!response.ok) throw new Error(nuevoUsuario.message || 'Error al crear el usuario');
+
+        setUsuarios((prev) => [...prev, nuevoUsuario]);
       }
 
-    handleCerrarFormulario();
-    }
-    catch (error) {
-      alert(error.message);
+      handleCerrarFormulario();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
   const usuariosFiltrados = usuarios.filter((u) => {
-    const nombre = u.nombre ? u.nombre.toLowerCase() : '';
-    const correo = u.correo ? u.correo.toLowerCase() : '';
-    const filtro= filtroBusqueda.toLowerCase();
+    const nombre = u.nombre?.toLowerCase() || '';
+    const correo = u.correo?.toLowerCase() || '';
+    const filtro = filtroBusqueda.toLowerCase();
     const coincideTexto = nombre.includes(filtro) || correo.includes(filtro);
     const coincideRol = filtroRol === 'todos' || u.rol === filtroRol;
     return coincideTexto && coincideRol;
@@ -172,18 +151,18 @@ const GestionUsuarios = () => {
   const usuariosPaginados = usuariosFiltrados.slice(inicio, inicio + usuariosPorPagina);
 
   return (
-    <section className="relative bg-white p-6 rounded-lg shadow-md">
+    <section className="relative bg-white p-6 rounded-lg shadow-md max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-fondoInstitucional">Gestión de Usuarios</h2>
+        <h2 className="text-3xl font-bold text-fondoInstitucional">👥 Gestión de Usuarios</h2>
         <button
           onClick={handleAbrirFormularioNuevo}
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded transition"
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
         >
           <PlusCircle size={18} /> Nuevo Usuario
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <input
           type="text"
           placeholder="Buscar por nombre o correo..."
@@ -192,16 +171,16 @@ const GestionUsuarios = () => {
             setFiltroBusqueda(e.target.value);
             setPaginaActual(1);
           }}
-          className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
+          className="w-full sm:w-1/2 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400 shadow-sm"
         />
-        <div className="flex items-center gap-4">
+        <div className="w-full flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-end">
           <select
             value={filtroRol}
             onChange={(e) => {
               setFiltroRol(e.target.value);
               setPaginaActual(1);
             }}
-            className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
           >
             <option value="todos">Todos los roles</option>
             <option value="administrador">Administrador</option>
@@ -214,7 +193,7 @@ const GestionUsuarios = () => {
               setUsuariosPorPagina(Number(e.target.value));
               setPaginaActual(1);
             }}
-            className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
           >
             <option value={5}>5 por página</option>
             <option value={10}>10 por página</option>
@@ -224,13 +203,13 @@ const GestionUsuarios = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-left border-collapse">
-          <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
+        <table className="min-w-full border-collapse text-sm">
+          <thead className="bg-gray-100 text-gray-600 uppercase">
             <tr>
-              <th className="px-4 py-2">Nombre</th>
-              <th className="px-4 py-2">Correo</th>
-              <th className="px-4 py-2">Rol</th>
-              <th className="px-4 py-2">Acciones</th>
+              <th className="px-4 py-2 text-left">Nombre</th>
+              <th className="px-4 py-2 text-left">Correo</th>
+              <th className="px-4 py-2 text-left">Rol</th>
+              <th className="px-4 py-2 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -242,13 +221,13 @@ const GestionUsuarios = () => {
                 <td className="px-4 py-2 flex gap-3">
                   <button
                     onClick={() => handleEditar(usuario)}
-                    className="text-blue-600 hover:underline flex items-center gap-1"
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                   >
                     <Pencil size={16} /> Editar
                   </button>
                   <button
                     onClick={() => handleEliminar(usuario.id)}
-                    className="text-red-600 hover:underline flex items-center gap-1"
+                    className="text-red-600 hover:text-red-800 flex items-center gap-1"
                   >
                     <Trash2 size={16} /> Eliminar
                   </button>
@@ -259,7 +238,6 @@ const GestionUsuarios = () => {
         </table>
       </div>
 
-      {/* Paginación */}
       <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <p>
           Página {paginaActual} de {totalPaginas}
@@ -282,9 +260,8 @@ const GestionUsuarios = () => {
         </div>
       </div>
 
-      {/* FORMULARIO */}
       {mostrarFormulario && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center px-4">
           <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-xl relative">
             <button
               onClick={handleCerrarFormulario}
